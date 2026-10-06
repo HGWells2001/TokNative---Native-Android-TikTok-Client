@@ -47,3 +47,11 @@ APK debug previsto:
 5. Blocca lo schermo: l'audio deve continuare e comparire nei controlli multimediali.
 6. Riapri TokNative: il Surface video deve riagganciarsi al player ancora attivo.
 7. Premi `↓` per scaricare il flusso disponibile in `Movies/TokNative`.
+
+## Beta 0.2 - Discover automatico
+- L'app non parte più vuota: include un feed Discover immediato.
+- Un modulo HTTP nativo prova a recuperare video pubblici da creator/categorie TikTok, senza WebView.
+- I video vengono risolti al flusso multimediale solo quando servono, per non rallentare l'avvio.
+- Il pulsante `⟳` aggiorna Discover manualmente.
+- Arrivando vicino alla fine del feed, TokNative tenta automaticamente un nuovo aggiornamento.
+- Se TikTok limita temporaneamente le richieste, rimane disponibile un piccolo feed fallback di URL pubblici.
