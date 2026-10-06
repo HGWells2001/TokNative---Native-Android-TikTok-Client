@@ -28,7 +28,7 @@ android {
 }
 
 dependencies {
-    implementation("androidx.browser:browser:1.10.0")
+    implementation("androidx.browser:browser:1.8.0")
     implementation("com.tiktok.open.sdk:tiktok-open-sdk-core:latest.release")
     implementation("com.tiktok.open.sdk:tiktok-open-sdk-auth:latest.release")
 }
