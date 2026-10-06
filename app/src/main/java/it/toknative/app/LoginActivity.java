@@ -144,7 +144,13 @@ public class LoginActivity extends Activity {
                 "it"
         );
 
-        boolean launched = authApi.authorize(request, AuthApi.AuthMethod.ChromeTab);
+        boolean launched;
+        try {
+            launched = authApi.authorize(request, AuthApi.AuthMethod.ChromeTab);
+        } catch (Throwable t) {
+            setStatus("Impossibile aprire l'autenticazione TikTok: " + safeThrowable(t));
+            return;
+        }
         setStatus(launched
                 ? "Apertura autenticazione TikTok… Se disponibile, puoi scegliere Continua con Google."
                 : "Impossibile avviare Login Kit. Controlla client key e configurazione TikTok.");
@@ -152,7 +158,14 @@ public class LoginActivity extends Activity {
 
     private void handleAuthResponse(android.content.Intent intent) {
         if (intent == null) return;
-        AuthResponse response = authApi.getAuthResponseFromIntent(intent, REDIRECT_URI);
+        if (!ensureAuthApi()) return;
+        AuthResponse response;
+        try {
+            response = authApi.getAuthResponseFromIntent(intent, REDIRECT_URI);
+        } catch (Throwable t) {
+            setStatus("Errore Login Kit nel callback: " + safeThrowable(t));
+            return;
+        }
         if (response == null) return;
 
         String expectedState = LoginPrefs.state(this);
