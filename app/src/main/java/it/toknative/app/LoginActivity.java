@@ -158,6 +158,7 @@ public class LoginActivity extends Activity {
 
     private void handleAuthResponse(android.content.Intent intent) {
         if (intent == null) return;
+        if (intent.getData() == null && intent.getExtras() == null) return;
         if (!ensureAuthApi()) return;
         AuthResponse response;
         try {
