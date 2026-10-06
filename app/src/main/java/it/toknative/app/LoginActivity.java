@@ -123,7 +123,19 @@ public class LoginActivity extends Activity {
         setContentView(scroll);
     }
 
+    private boolean ensureAuthApi() {
+        if (authApi != null) return true;
+        try {
+            authApi = new AuthApi(this);
+            return true;
+        } catch (Throwable t) {
+            setStatus("Login Kit non disponibile: " + safeThrowable(t));
+            return false;
+        }
+    }
+
     private void beginLogin() {
+        if (!ensureAuthApi()) return;
         String clientKey = LoginPrefs.clientKey(this);
         if (clientKey.isEmpty()) {
             showConfigDialog();
@@ -342,6 +354,14 @@ public class LoginActivity extends Activity {
     }
 
     private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
+
+    private static String safeThrowable(Throwable t) {
+        String m = t.getMessage();
+        return m == null || m.trim().isEmpty()
+                ? t.getClass().getSimpleName()
+                : t.getClass().getSimpleName() + ": " + m;
+    }
+
     private static String safeMessage(Exception e) {
         String m = e.getMessage();
         return m == null || m.trim().isEmpty() ? e.getClass().getSimpleName() : m;
