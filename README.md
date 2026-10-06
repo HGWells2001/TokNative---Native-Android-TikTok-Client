@@ -55,3 +55,24 @@ APK debug previsto:
 - Il pulsante `⟳` aggiorna Discover manualmente.
 - Arrivando vicino alla fine del feed, TokNative tenta automaticamente un nuovo aggiornamento.
 - Se TikTok limita temporaneamente le richieste, rimane disponibile un piccolo feed fallback di URL pubblici.
+
+
+## Beta 0.3 - Login TikTok / Google
+- Pulsante profilo `👤` nel player.
+- Integrazione TikTok OpenSDK Login Kit 2.3.1, senza WebView.
+- Autenticazione tramite Chrome Custom Tab; se TikTok propone Google, l'utente può scegliere **Continua con Google** nel flusso TikTok.
+- PKCE e `state` anti-CSRF generati per ogni login.
+- Redirect predefinito: `https://hgwells2001.github.io/TokNative---Native-Android-TikTok-Client/callback/`.
+- Configurazione `client_key` e URL backend direttamente dalla schermata Profilo.
+- Il `client_secret` non viene mai inserito nell'APK.
+- Incluso `server/cloudflare-worker.js` come esempio minimale per lo scambio server-side del codice OAuth e lettura del profilo.
+
+### Configurazione richiesta nel TikTok Developer Portal
+1. Crea/usa una TikTok Developer App e aggiungi **Login Kit**.
+2. Registra Android package `it.toknative.app`.
+3. Registra MD5 e SHA-256 del certificato con cui distribuisci l'APK.
+4. Registra il redirect HTTPS indicato sopra.
+5. Abilita almeno `user.info.basic`; per i propri video abilita anche `video.list`.
+6. Inserisci la sola `client_key` in TokNative > Profilo > Configura Login Kit.
+
+Per una sessione persistente, configura anche un backend HTTPS che esponga `POST /tiktok/exchange`. Il client secret e gli eventuali refresh token devono restare server-side.
