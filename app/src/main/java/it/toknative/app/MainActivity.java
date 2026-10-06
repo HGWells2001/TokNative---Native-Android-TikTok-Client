@@ -192,6 +192,7 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
         controls.setPadding(dp(4), dp(6), dp(4), dp(6));
         controls.setBackgroundColor(0xCC101010);
 
+        Button profile = makeButton("👤");
         Button discover = makeButton("⟳");
         Button add = makeButton("+");
         Button prev = makeButton("◀");
@@ -199,6 +200,7 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
         Button next = makeButton("▶▶");
         Button download = makeButton("↓");
 
+        controls.addView(profile, weighted());
         controls.addView(discover, weighted());
         controls.addView(add, weighted());
         controls.addView(prev, weighted());
@@ -210,6 +212,7 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(68), Gravity.BOTTOM);
         root.addView(controls, controlsLp);
 
+        profile.setOnClickListener(v -> startActivity(new Intent(this, LoginActivity.class)));
         discover.setOnClickListener(v -> refreshDiscover(true));
         add.setOnClickListener(v -> showAddDialog());
         prev.setOnClickListener(v -> goRelative(-1));
