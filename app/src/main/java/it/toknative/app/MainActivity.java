@@ -44,6 +44,7 @@ import java.util.concurrent.Executors;
 
 public class MainActivity extends Activity implements TextureView.SurfaceTextureListener {
     private static final long RESOLVE_TTL_MS = 20L * 60L * 1000L;
+    private static final long DISCOVERY_COOLDOWN_MS = 90L * 1000L;
 
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private final Handler main = new Handler(Looper.getMainLooper());
@@ -55,6 +56,9 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
     private Surface videoSurface;
     private VideoItem pendingPlayItem;
     private long pendingPlayPosition;
+    private boolean discoverLoading;
+    private long lastDiscoveryAttempt;
+    private boolean autoPlayAfterDiscovery;
 
     private TextureView textureView;
     private TextView titleView;
@@ -98,7 +102,14 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
         buildUi();
         requestNotificationPermissionIfNeeded();
         handleShareIntent(getIntent());
+        if (feed.isEmpty()) {
+            feed.addAll(DiscoveryFeed.fallback());
+            FeedStore.save(this, feed, 0);
+            index = 0;
+            autoPlayAfterDiscovery = true;
+        }
         refreshUi();
+        refreshDiscover(false);
     }
 
     @Override protected void onNewIntent(Intent intent) {
@@ -181,12 +192,14 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
         controls.setPadding(dp(4), dp(6), dp(4), dp(6));
         controls.setBackgroundColor(0xCC101010);
 
+        Button discover = makeButton("⟳");
         Button add = makeButton("+");
         Button prev = makeButton("◀");
         playButton = makeButton("▶");
         Button next = makeButton("▶▶");
         Button download = makeButton("↓");
 
+        controls.addView(discover, weighted());
         controls.addView(add, weighted());
         controls.addView(prev, weighted());
         controls.addView(playButton, weighted());
@@ -197,6 +210,7 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(68), Gravity.BOTTOM);
         root.addView(controls, controlsLp);
 
+        discover.setOnClickListener(v -> refreshDiscover(true));
         add.setOnClickListener(v -> showAddDialog());
         prev.setOnClickListener(v -> goRelative(-1));
         next.setOnClickListener(v -> goRelative(1));
@@ -319,11 +333,12 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
         FeedStore.save(this, feed, index);
         refreshUi();
         playCurrent(true);
+        if (delta > 0 && index >= Math.max(0, feed.size() - 4)) refreshDiscover(false);
     }
 
     private void togglePlayback() {
         if (feed.isEmpty()) {
-            showAddDialog();
+            refreshDiscover(true);
             return;
         }
         if (bound && playerService != null && playerService.isPlaying()) {
@@ -448,16 +463,59 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
         titleView.setVisibility(has ? View.VISIBLE : View.GONE);
         if (has) {
             VideoItem item = feed.get(index);
-            titleView.setText(item.title + "\n" + (index + 1) + " / " + feed.size());
+            titleView.setText(item.title + "\n" + (index + 1) + " / " + feed.size() + "  •  swipe ↑↓");
             if (statusView.getText().length() == 0) {
                 setStatus("Scorri su/giù • tocca il video per Play/Pausa");
             }
         } else {
             titleView.setText("");
-            setStatus("Pronto • nessuna WebView");
+            setStatus(discoverLoading ? "Caricamento Discover…" : "Discover pronto • nessuna WebView");
         }
         boolean playing = bound && playerService != null && playerService.isPlaying();
         playButton.setText(playing ? "Ⅱ" : "▶");
+    }
+
+
+    private void refreshDiscover(boolean userRequested) {
+        long now = System.currentTimeMillis();
+        if (discoverLoading) return;
+        if (!userRequested && now - lastDiscoveryAttempt < DISCOVERY_COOLDOWN_MS) return;
+        lastDiscoveryAttempt = now;
+        discoverLoading = true;
+        setStatus("Aggiornamento Discover…");
+        io.execute(() -> {
+            List<VideoItem> discovered = DiscoveryFeed.discover();
+            main.post(() -> {
+                discoverLoading = false;
+                int added = mergeDiscovered(discovered);
+                FeedStore.save(this, feed, index);
+                refreshUi();
+                setStatus(added > 0 ? ("Discover aggiornato • +" + added + " video") : "Discover già aggiornato");
+                if (autoPlayAfterDiscovery && !feed.isEmpty()) {
+                    autoPlayAfterDiscovery = false;
+                    playCurrent(false);
+                }
+            });
+        });
+    }
+
+    private int mergeDiscovered(List<VideoItem> discovered) {
+        if (discovered == null || discovered.isEmpty()) return 0;
+        int added = 0;
+        for (VideoItem candidate : discovered) {
+            boolean exists = false;
+            for (VideoItem current : feed) {
+                if (current.sourceUrl.equals(candidate.sourceUrl)) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) {
+                feed.add(candidate);
+                added++;
+            }
+        }
+        return added;
     }
 
     private void setStatus(String text) {
