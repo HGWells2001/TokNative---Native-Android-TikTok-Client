@@ -152,7 +152,7 @@ public final class TikTokResolver {
     private static String decodeJsonString(String raw) {
         if (raw == null) return null;
         try {
-            String decoded = new JSONArray("[\\\"" + raw + "\\"]").getString(0);
+            String decoded = new JSONArray("[\"" + raw + "\"]").getString(0);
             return decoded.replace("&amp;", "&").replace("\\u0026", "&");
         } catch (Exception ignored) {
             return raw.replace("\\u002F", "/").replace("\\/", "/").replace("\\u0026", "&").replace("&amp;", "&");
